@@ -293,16 +293,25 @@ class SearchResult():
     This is a lighter version of the returned object, with only the needed elements \
     and some useful methods.
     '''
-    def __init__(self, title, category, publication_date, price, coordinates, real_estate_type, square, url, thumbnail, **kwargs):
+    def __init__(
+        self, title, category, publication_date, price, coordinates,
+        real_estate_type, square, url, thumbnail, images, charges_included,
+        city_label, body, publication_date_str, **kwargs
+    ):
         if title is not None:
             assert(type(title) == type(str()))
         self.title = title
+
+        if body is not None:
+            assert isinstance(body, str)
+        self.body = body
         
         if publication_date is not None:
             if not isinstance(publication_date, datetime.date):
               self.publication_date = datetime.datetime.strptime(publication_date, '%Y-%m-%d')
             else:
               self.publication_date = publication_date
+        self.publication_date_str = publication_date_str
 
         if category is not None:
             assert(check_cat_name(category))
@@ -317,6 +326,10 @@ class SearchResult():
         else:
             coordinates = (None,None)
         self.coordinates = coordinates
+
+        self.city_label = city_label
+
+        self.charges_included = charges_included
         
         if real_estate_type is not None:
             assert(check_type_name(real_estate_type))
@@ -335,18 +348,24 @@ class SearchResult():
             assert(type(thumbnail) == type(str()))
         self.thumbnail = thumbnail
 
+        if images is not None:
+            assert isinstance(images, list)
+        self.images = images
+
     @classmethod
     def from_dict(cls, result):
         assert(type(result) is type(dict()))
         # check that all the required keys are present in the dict
         REQUIRED_KEYS = ('first_publication_date', 'subject', 'url', 'price', 'images', \
-                'attributes', 'location', 'category_id')
+                         'attributes', 'location', 'category_id', 'body')
         assert(all([key in result.keys() for key in REQUIRED_KEYS]))
 
-        ts = time.mktime(time.strptime(result['first_publication_date'], '%Y-%m-%d %H:%M:%S'))
-        publication_date = datetime.date.fromtimestamp(ts) 
+        publication_date_str = result['first_publication_date']
+        ts = time.mktime(time.strptime(publication_date_str, '%Y-%m-%d %H:%M:%S'))
+        publication_date = datetime.date.fromtimestamp(ts)
         
         title = result['subject']
+        body = result['body']
         url = result['url']
         category = get_cat_by_id(result['category_id'])
         
@@ -360,13 +379,18 @@ class SearchResult():
         else:
             thumbnail = ''
 
+        images = result['images'].get('urls', [])
+
         assert('lat' in result['location'].keys() and \
                 'lng' in result['location'].keys())
         
         coordinates = (result['location']['lat'], result['location']['lng'])
-        
+
+        city_label = result['location'].get('city_label')
+
         real_estate_type = None
         square = None
+        charges_included = None
         for i in result['attributes'] :
             key = i['key']
             if key == 'real_estate_type':
@@ -379,8 +403,16 @@ class SearchResult():
                         square = int(i['value'][:-1])
                 except ValueError:
                     square = 0
+            if key == 'charges_included':
+                charges_included = i['value_label'].lower()
 
-        return cls(title=title, category=category, publication_date=publication_date, price=price, coordinates=coordinates, real_estate_type=real_estate_type, square=square, url=url, thumbnail=thumbnail)
+        return cls(
+            title=title, category=category, publication_date=publication_date,
+            price=price, coordinates=coordinates,
+            real_estate_type=real_estate_type, square=square, url=url,
+            thumbnail=thumbnail, images=images, charges_included=charges_included,
+            city_label=city_label, body=body, publication_date_str=publication_date_str
+        )
 
     def is_house(self): 
         '''
@@ -437,7 +469,8 @@ class SearchResult():
                 self.real_estate_type,
                 self.square,
                 self.url,
-                self.thumbnail
+                self.thumbnail,
+                self.body
                 )
         return s
 
