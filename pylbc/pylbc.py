@@ -3,6 +3,8 @@ import datetime
 import json
 import requests
 
+from .exceptions import InvalidEstateType, InvalidDepartment, InvalidCategory
+
 CATEGORIES = { 8: 'immobilier', 9: 'ventes', 10:'locations', 11: 'colocations'}
 get_cat_by_id = lambda x : next((name for id,name in CATEGORIES.items() if str(id) == str(x)), False)
 get_cat_by_name = lambda x : next((str(id) for id,name in CATEGORIES.items() if name == x), False)
