@@ -235,9 +235,16 @@ class Search():
             therange['max'] = maxi
         return therange
 
+    def get_filters(self):
+        '''
+        Get the current value of the different filters which have been set
+        '''
+        self.__prepare_payload()
+        return self.payload
+
     def show_filters(self):
         '''
-        Display the current value of the differents filters which have been set
+        Display the current value of the different filters which have been set
         '''
         self.__prepare_payload()
         print(self.payload)
